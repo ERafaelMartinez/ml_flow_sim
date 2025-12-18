@@ -1,0 +1,9 @@
+numpy
+torch
+matplotlib
+pyyaml
+Pillow
+pyvista
+jupyter
+notebook
+ipykernel

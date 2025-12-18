@@ -1,0 +1,11 @@
+inputs:
+  u:
+    max: # maximum u-value (provided as input to the simulation as an initial condition)
+    min: # minimum u-value (provided as input to the simulation as an initial condition)
+labels:
+  u:
+    max: # maximum found value for u
+    min:  # minimum found value for u
+  v:
+    max:  # maximum found value for v
+    min:  # minimum found value for v

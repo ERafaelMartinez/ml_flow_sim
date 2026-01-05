@@ -2,13 +2,14 @@ import matplotlib.pyplot as plt
 import random
 import numpy as np
 
-def plot_data_samples(inputs, outputs, sample_idx=None):
+def plot_data_samples(inputs, outputs, title="", sample_idx=None):
     """
     Plots the input and output data for a specific sample index.
     
     Args:   
         inputs: Input data (torch.Tensor or np.ndarray)
         outputs: Output data (torch.Tensor or np.ndarray)
+        title: Title of the plot
         sample_idx: Index of the sample to plot. If None, a random index is chosen.
     """
     if sample_idx is None:
@@ -39,11 +40,13 @@ def plot_data_samples(inputs, outputs, sample_idx=None):
 
     im2 = axes[1].imshow(output_data_u, origin='lower', cmap="RdYlBu_r", vmin=vmin, vmax=vmax)
     axes[1].set_title(f"Sample Output u (Idx: {sample_idx})")
-    #fig.colorbar(im2, ax=axes[1], label="Value")
+    fig.colorbar(im2, ax=axes[1], label="Value")
 
     im3 = axes[2].imshow(output_data_v, origin='lower', cmap="RdYlBu_r", vmin=vmin, vmax=vmax)
     axes[2].set_title(f"Sample Output v (Idx: {sample_idx})")
-    #fig.colorbar(im3, ax=axes[2], label="Value")
+    fig.colorbar(im3, ax=axes[2], label="Value")
 
     plt.tight_layout()
+    plt.suptitle(title)
+
     plt.show()

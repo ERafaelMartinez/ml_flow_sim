@@ -1,3 +1,4 @@
+from data.normalization import normalize_data, denormalize_data
 import logging
 import os
 import torch
@@ -12,6 +13,10 @@ class Model(nn.Module):
     """
     def __init__(self):
         super(Model, self).__init__()
+
+        ##################
+        ## Model Layers ##
+        ##################
 
         # First convolutional layer:
         # Conv2d(in=1, out=16, kernel=7x7, padding="same", stride=1)
@@ -34,17 +39,33 @@ class Model(nn.Module):
             stride=1, padding='same'
         )
 
+        #######################
+        ## Training Metadata ##
+        #######################
+
+        self._training_loss = []
+        self._validation_loss = []
+
     def fit(self, train_dataloader: torch.utils.data.DataLoader,
             val_dataloader: torch.utils.data.DataLoader = None,
-            learning_rate: float = 0.001, epochs: int = 100):
+            learning_rate: float = 0.001, epochs: int = 100,
+            normalize: bool = False, range_info_path: str = "./data/min_max.yaml"):
         """Fit the model on the given training data"""
         # Initialize optimizer and loss function
         optimizer = torch.optim.Adam(self.parameters(), lr=learning_rate)
         criterion = torch.nn.MSELoss()
 
+        # ensure data is normalized if requested
+        if normalize:
+            inputs, outputs = train_dataloader.dataset.tensors
+            inputs, outputs = normalize_data(inputs, outputs, range_info_path)
+            train_dataloader.dataset.tensors = (inputs, outputs)
+
         # Train model: for each epoch, evaluate the model, 
         # compute the loss and update the weights (i.e. step)
         self.train()
+        self._training_loss = []
+        self._validation_loss = []
         for epoch in range(epochs):
             for batch_x, batch_y in train_dataloader:
                 # Ensure data is float32
@@ -57,9 +78,30 @@ class Model(nn.Module):
                 loss.backward()
                 optimizer.step()
 
-            # Log training loss
-            logging.info(f"Epoch {epoch}, Loss: {loss.item()}")
-            print(f"Epoch {epoch}, Loss: {loss.item()}")
+            self._training_loss.append(loss.item())
+
+            if val_dataloader is not None:
+                self.eval()
+                val_loss = 0
+                with torch.no_grad():
+                    for batch_x, batch_y in val_dataloader:
+                        batch_x = batch_x.float()
+                        batch_y = batch_y.float()
+                        outputs = self.forward(batch_x)
+                        val_loss += criterion(outputs, batch_y).item()
+                val_loss /= len(val_dataloader)
+                self._validation_loss.append(val_loss)
+                self.train() # reset module to training mode
+
+            # Log training loss every 50 epochs
+            if epoch % 50 == 0:
+                print("-"*10)
+                print(f"Epoch {epoch}")
+                print(f"Training loss: {loss.item()}")
+                if val_dataloader is not None:
+                    print(f"Validation loss: {val_loss}")
+                print("-"*10)
+
 
 
     def forward(self, x: torch.Tensor):
@@ -74,6 +116,17 @@ class Model(nn.Module):
 
         # Apply output layer and return
         return self.output_layer(x)
+
+    def inference(self, inputs: torch.Tensor,
+                  range_info_path: str = "./data/min_max.yaml"):
+        """
+        Perform inference on the given inputs by applying the model
+        and (de)normalization to the data.
+        """
+        inputs, _ = normalize_data(inputs, None, range_info_path)
+        outputs = self.forward(inputs)
+        _, outputs = denormalize_data(None, outputs, range_info_path)
+        return outputs
         
     def load_model(self, path: str = "./models/", name: str = "model"):
         """Load model weights from binary file"""

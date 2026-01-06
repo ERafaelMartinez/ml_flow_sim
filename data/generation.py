@@ -10,7 +10,7 @@ import numpy as np
 import torch
 
 import utils
-
+from utils import SimulationParameters
 
 def generate_simulation_datapoint(re: int, u_bound: float) -> (torch.Tensor, torch.Tensor):
     """Generate a single simulation datapoint"""
@@ -60,12 +60,40 @@ def generate_dataset_parallel(sim_params: np.ndarray) -> (torch.Tensor, torch.Te
         dataset = pool.starmap(generate_simulation_datapoint, sim_params)
     
     return torch.stack([d[0] for d in dataset]), torch.stack([d[1] for d in dataset])
-
+    
 
 if __name__ == "__main__":
-    # create an even distribution of values between 500 and 1500
-    step_size = (1500 - 500) // 101  # we want to have 101 data points
-    re = np.arange(500, 1500, step_size).astype(int)
+    n_data_points = 1
+    dataset_name = "bc_ood_left"
+
+    # reynolds number range
+    SimulationParameters.re_min = 1000
+    SimulationParameters.re_max = 1100
+    
+    # discretization
+    SimulationParameters.n_cells_x = 20
+    SimulationParameters.n_cells_y = 20
+
+    # physical size
+    SimulationParameters.phisical_size_x = 2
+    SimulationParameters.phisical_size_y = 2
+
+    # boundary conditions
+    SimulationParameters.u_bound_left = 1
+    SimulationParameters.u_bound_right = 0
+    SimulationParameters.u_bound_top = 0
+    SimulationParameters.u_bound_bottom = 0
+
+    SimulationParameters.v_bound_left = 0
+    SimulationParameters.v_bound_right = 0
+    
+    # create an even distribution of values between min and max re range
+    step_size = (
+        SimulationParameters.re_max - SimulationParameters.re_min
+        ) // n_data_points  # we want to have n data points
+    re = np.arange(
+        SimulationParameters.re_min, SimulationParameters.re_max, step_size
+        ).astype(int)
     u_bound = re / 1000
 
     # zip the values to use them together
@@ -78,5 +106,5 @@ if __name__ == "__main__":
     os.system("rm -rf ./temp")
 
     # save the dataset
-    torch.save(dataset_in, "./resources/dataset_in.pt")
-    torch.save(dataset_out, "./resources/dataset_out.pt")
+    torch.save(dataset_in, "./resources/dataset_" + dataset_name + "_in.pt")
+    torch.save(dataset_out, "./resources/dataset_" + dataset_name + "_out.pt")

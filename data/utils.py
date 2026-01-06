@@ -4,33 +4,54 @@ import subprocess
 
 import torch
 
+
+class SimulationParameters:
+    re_min: int = 500
+    re_max: int = 1500
+    
+    u_bound_left: int = 0
+    u_bound_right: int = 0
+    u_bound_top: int = 1
+    u_bound_bottom: int = 0
+
+    v_bound_left: int = 0
+    v_bound_right: int = 0
+    v_bound_top: int = 0
+    v_bound_bottom: int = 0
+
+    n_cells_x: int = 20
+    n_cells_y: int = 20
+    phisical_size_x: float = 2
+    phisical_size_y: float = 2 
+
 def get_params_text(re: float, u_bound: float) -> str:
     """Get the parameters as a string"""
-    return f"""
+    return (
+f"""
 # Settings file for numsim program
 # Run ./numsim lid_driven_cavity.txt
 
 # Problem description
-physicalSizeX = 2.0   # physical size of the domain
-physicalSizeY = 2.0
+physicalSizeX = {SimulationParameters.phisical_size_x}   # physical size of the domain
+physicalSizeY = {SimulationParameters.phisical_size_y}
 endTime = 10.0        # duration of the simulation
 re = {re}
 gX = 0.0              # external forces, set to (gX,gY) = (0,-9.81) to account for gravity
 gY = 0.0
 
 # Dirichlet boundary conditions
-dirichletBottomX = 0
-dirichletBottomY = 0
-dirichletTopX    = {u_bound}
-dirichletTopY    = 0
-dirichletLeftX   = 0
-dirichletLeftY   = 0
-dirichletRightX  = 0
-dirichletRightY  = 0
+dirichletBottomX = {SimulationParameters.u_bound_bottom * u_bound}
+dirichletBottomY = {SimulationParameters.v_bound_bottom * u_bound}
+dirichletTopX    = {SimulationParameters.u_bound_top * u_bound}
+dirichletTopY    = {SimulationParameters.v_bound_top * u_bound}
+dirichletLeftX   = {SimulationParameters.u_bound_left * u_bound}
+dirichletLeftY   = {SimulationParameters.v_bound_left * u_bound}
+dirichletRightX  = {SimulationParameters.u_bound_right * u_bound}
+dirichletRightY  = {SimulationParameters.v_bound_right * u_bound}
 
 # Discretization parameters
-nCellsX = 20          # number of cells in x and y direction
-nCellsY = 20
+nCellsX = {SimulationParameters.n_cells_x}          # number of cells in x and y direction
+nCellsY = {SimulationParameters.n_cells_y}
 useDonorCell = true   # if donor cell discretization should be used, possible values: true false
 alpha = 0.5           # factor for donor-cell scheme, 0 is equivalent to central differences
 tau = 0.5             # safety factor for time step width
@@ -43,6 +64,7 @@ epsilon = 1e-5        # tolerance for 2-norm of residual
 maximumNumberOfIterations = 1e4    # maximum number of iterations in the solver
 
 """
+)
 
 def write_params_file(
     re: float, u_bound: float, filename="params.txt"

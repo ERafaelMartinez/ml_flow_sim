@@ -24,29 +24,44 @@ def plot_data_samples(inputs, outputs, title="", sample_idx=None):
     input_sample = to_numpy(inputs[sample_idx])
     output_sample = to_numpy(outputs[sample_idx])
 
-    input_data_u = input_sample[0] # corresponds to a horizontal velocity field
-    output_data_u = output_sample[0] # corresponds to a horizontal velocity field
-    output_data_v = output_sample[1] # corresponds to a vertical velocity field
+    # Collect fields to plot
+    plots_to_show = []
 
-    all_data = np.concatenate([input_data_u.flatten(), output_data_u.flatten(), output_data_v.flatten()])
+    # corresponds to a horizontal velocity field (Input u)
+    plots_to_show.append((input_sample[0], f"Sample Input u (Idx: {sample_idx})"))
+
+    # corresponds to a vertical velocity field (Input v, if present)
+    if input_sample.shape[0] > 1:
+        plots_to_show.append((input_sample[1], f"Sample Input v (Idx: {sample_idx})"))
+
+    # corresponds to a horizontal velocity field (Output u)
+    plots_to_show.append((output_sample[0], f"Sample Output u (Idx: {sample_idx})"))
+
+    # corresponds to a vertical velocity field (Output v, if present)
+    if output_sample.shape[0] > 1:
+        plots_to_show.append((output_sample[1], f"Sample Output v (Idx: {sample_idx})"))
+
+    # Compute global vmin/vmax for consistent coloring
+    all_data = np.concatenate([p[0].flatten() for p in plots_to_show])
     vmin = all_data.min()
     vmax = all_data.max()
 
-    fig, axes = plt.subplots(1, 3, figsize=(12, 5))
+    n_plots = len(plots_to_show)
+    # Reduced height to minimize vertical gap, using constrained_layout for better spacing
+    # figsize height reduced to 3.5 to fit the horizontal strips better without large gaps
+    fig, axes = plt.subplots(1, n_plots, figsize=(12, 3.5), constrained_layout=True)
+    
+    # Ensure axes is iterable even if only 1 plot
+    if n_plots == 1:
+        axes = [axes]
 
-    im1 = axes[0].imshow(input_data_u, origin='lower', cmap="RdYlBu_r", vmin=vmin, vmax=vmax)
-    axes[0].set_title(f"Sample Input u (Idx: {sample_idx})")
-    fig.colorbar(im1, ax=axes[0], label="Value")
+    im = None
+    for ax, (data, label) in zip(axes, plots_to_show):
+        im = ax.imshow(data, origin='lower', cmap="RdYlBu_r", vmin=vmin, vmax=vmax)
+        ax.set_title(label)
 
-    im2 = axes[1].imshow(output_data_u, origin='lower', cmap="RdYlBu_r", vmin=vmin, vmax=vmax)
-    axes[1].set_title(f"Sample Output u (Idx: {sample_idx})")
-    #fig.colorbar(im2, ax=axes[1], label="Value")
+    # Add single horizontal colorbar below the plots
+    fig.colorbar(im, ax=axes, orientation='horizontal', fraction=0.05, aspect=50, label="Value")
 
-    im3 = axes[2].imshow(output_data_v, origin='lower', cmap="RdYlBu_r", vmin=vmin, vmax=vmax)
-    axes[2].set_title(f"Sample Output v (Idx: {sample_idx})")
-    #fig.colorbar(im3, ax=axes[2], label="Value")
-
-    plt.tight_layout()
     plt.suptitle(title)
-
     plt.show()

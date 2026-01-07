@@ -38,10 +38,15 @@ def normalize_data(inputs: torch.Tensor = None, outputs: torch.Tensor = None, ra
     
     # normalize the data
     if inputs_norm is not None:
-        inputs_norm = (
-            (inputs - range_info["inputs"]["u"]["min"]) / 
+        inputs_norm[:, 0, :, :] = (
+            (inputs[:, 0, :, :] - range_info["inputs"]["u"]["min"]) / 
             (range_info["inputs"]["u"]["max"] - range_info["inputs"]["u"]["min"])
         )
+        if inputs.shape[1] > 1:
+            inputs_norm[:, 1, :, :] = (
+                (inputs[:, 1, :, :] - range_info["inputs"]["v"]["min"]) / 
+                (range_info["inputs"]["v"]["max"] - range_info["inputs"]["v"]["min"])
+            )
     if outputs_norm is not None:
         outputs_norm[:, 0, :, :] = (
             (outputs[:, 0, :, :] - range_info["labels"]["u"]["min"]) / 
@@ -92,10 +97,15 @@ def denormalize_data(inputs: torch.Tensor = None, outputs: torch.Tensor = None,
     
     # denormalize the data
     if inputs_denorm is not None:
-        inputs_denorm = (
-            inputs * (range_info["inputs"]["u"]["max"] - range_info["inputs"]["u"]["min"]) + 
+        inputs_denorm[:, 0, :, :] = (
+            inputs[:, 0, :, :] * (range_info["inputs"]["u"]["max"] - range_info["inputs"]["u"]["min"]) + 
             range_info["inputs"]["u"]["min"]
         )
+        if inputs.shape[1] > 1:
+            inputs_denorm[:, 1, :, :] = (
+                inputs[:, 1, :, :] * (range_info["inputs"]["v"]["max"] - range_info["inputs"]["v"]["min"]) + 
+                range_info["inputs"]["v"]["min"]
+            )
     if outputs_denorm is not None:
         outputs_denorm[:, 0, :, :] = (
             outputs[:, 0, :, :] * (range_info["labels"]["u"]["max"] - range_info["labels"]["u"]["min"]) + 
